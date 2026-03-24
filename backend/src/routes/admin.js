@@ -1,0 +1,42 @@
+const router = require('express').Router();
+const { getDashboard, getUsers, updateUserRole, getUserDetails } = require('../controllers/adminController');
+const { authMiddleware, adminMiddleware } = require('../middleware/auth');
+
+/**
+ * @swagger
+ * /api/admin/dashboard:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get admin dashboard statistics
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: Dashboard statistics }
+ */
+router.get('/dashboard', authMiddleware, adminMiddleware, getDashboard);
+
+/**
+ * @swagger
+ * /api/admin/users:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get all users
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: List of users }
+ */
+router.get('/users', authMiddleware, adminMiddleware, getUsers);
+
+/**
+ * @swagger
+ * /api/admin/users/{id}/role:
+ *   put:
+ *     tags: [Admin]
+ *     summary: Update user role
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: User role updated }
+ */
+router.put('/users/:id/role', authMiddleware, adminMiddleware, updateUserRole);
+router.get('/users/:id', authMiddleware, adminMiddleware, getUserDetails);
+
+module.exports = router;

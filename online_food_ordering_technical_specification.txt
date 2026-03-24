@@ -1,0 +1,304 @@
+Technical Specification (Technical Mission)
+
+Online Food Ordering Platform
+
+1. Project Overview
+
+The goal of this project is to develop a modern online food ordering
+platform that allows users to browse food categories, select meals, add
+them to a cart, and complete payments online. The system will also
+include an advanced admin panel and a Telegram bot with WebApp
+integration.
+
+The system must be fast, visually appealing, user-friendly, and
+scalable. It will support multiple languages, dark/light themes, smooth
+animations, and a modern UI/UX.
+
+------------------------------------------------------------------------
+
+2. System Architecture
+
+The project will be separated into three main folders:
+
+1.  frontend/
+2.  backend/
+3.  telegram-bot/
+
+Each component will operate independently but communicate through APIs.
+
+------------------------------------------------------------------------
+
+3. Technology Stack
+
+Frontend
+
+-   Framework: Next.js
+-   Language: TypeScript
+-   Styling: TailwindCSS or CSS Modules
+-   State Management: React Context / Zustand / Redux Toolkit
+-   Animations: Framer Motion
+-   Internationalization: next-i18next or i18n
+-   Theme Management: Dark Mode / Light Mode toggle
+
+Backend
+
+-   Runtime: Node.js
+-   Framework: Express.js
+-   Database: MongoDB
+-   ODM: Mongoose
+-   Authentication: JWT
+-   Security: Helmet, Rate Limiting, CORS
+-   API Documentation: Swagger
+
+Telegram Bot
+
+-   Library: node-telegram-bot-api
+-   Database: MongoDB
+-   Features: WebApp support, order tracking, notifications
+
+------------------------------------------------------------------------
+
+4. Folder Structure
+
+project-root/ frontend/ backend/ telegram-bot/
+
+------------------------------------------------------------------------
+
+5. Frontend Requirements
+
+Main Website Pages
+
+Home Page
+
+-   Hero section with promotions
+-   Top foods section
+-   Food categories section
+-   Popular meals carousel
+-   Quick add-to-cart functionality
+-   Search bar
+
+Categories Page
+
+-   List of food categories
+-   Foods filtered by category
+-   Grid layout with food cards
+
+Food Details Page
+
+-   Image gallery
+-   Ingredients description
+-   Price
+-   Add to cart button
+-   Quantity selector
+
+Cart Page
+
+-   List of selected items
+-   Quantity modification
+-   Remove item
+-   Cart total calculation
+
+Checkout Page
+
+-   Customer information form
+-   Delivery address
+-   Payment options
+-   Order confirmation
+
+Order Success Page
+
+-   Order summary
+-   Estimated delivery time
+
+------------------------------------------------------------------------
+
+6. Key Frontend Features
+
+Multi-language Support
+
+The platform must support 3 languages: - Uzbek - Russian - English
+
+Users can switch language dynamically.
+
+Theme Support
+
+-   Light Mode
+-   Dark Mode
+-   Saved user preference
+
+Animations
+
+Smooth animations should be implemented for: - Page transitions - Cart
+updates - Hover effects - Loading skeletons
+
+Use Framer Motion where possible.
+
+Responsive Design
+
+The website must work perfectly on: - Desktop - Tablet - Mobile devices
+
+------------------------------------------------------------------------
+
+7. User Features
+
+Users should be able to:
+
+-   Browse food categories
+-   View top meals
+-   Search meals
+-   Add meals to cart
+-   Modify cart items
+-   Checkout orders
+-   Pay online
+-   Track order status
+
+Optional improvements: - Favorite meals - Order history - Profile page
+
+------------------------------------------------------------------------
+
+8. Payment System
+
+The platform must include payment functionality.
+
+Possible integrations: - Stripe - Payme - Click
+
+Payment flow: 1. User adds items to cart 2. User proceeds to checkout 3.
+User selects payment method 4. Payment is processed 5. Order is saved in
+database
+
+------------------------------------------------------------------------
+
+9. Backend Requirements
+
+The backend will provide REST API endpoints.
+
+Core Modules
+
+Authentication Module - User registration - User login - JWT
+authentication
+
+Food Module - Create food item - Update food item - Delete food item -
+Get foods - Filter by category
+
+Category Module - Create category - Update category - Delete category -
+List categories
+
+Order Module - Create order - Update order status - List user orders
+
+Payment Module - Handle payment processing
+
+------------------------------------------------------------------------
+
+10. Database Design
+
+MongoDB collections:
+
+Users - name - phone - password - role
+
+Categories - name - image
+
+Foods - name - description - price - categoryId - image
+
+Orders - userId - items - totalPrice - status - paymentStatus -
+deliveryAddress
+
+Payments - orderId - method - status
+
+------------------------------------------------------------------------
+
+11. Admin Panel
+
+Admin panel must allow full system management.
+
+Admin Features
+
+Dashboard - Total revenue - Total orders - Daily statistics - Graph
+analytics
+
+Food Management - Create foods - Edit foods - Delete foods
+
+Category Management - Create categories - Edit categories - Delete
+categories
+
+Orders Management - List of orders - Order status update - Order details
+
+Revenue Monitoring - Revenue list - Daily / weekly / monthly reports
+
+User Management - View users - Manage permissions
+
+------------------------------------------------------------------------
+
+12. Telegram Bot
+
+A Telegram bot must be created to support the platform.
+
+Bot Technologies
+
+-   node-telegram-bot-api
+-   MongoDB
+
+Bot Features
+
+Main Menu - Visit Website (WebApp button) - My Orders - Contact Support
+
+WebApp Integration Users should be able to open the website directly
+inside Telegram via WebApp.
+
+Order Notifications - Admin receives new order notifications - Users
+receive order status updates
+
+------------------------------------------------------------------------
+
+13. Security Requirements
+
+-   JWT Authentication
+-   Rate limiting
+-   Password hashing (bcrypt)
+-   CORS protection
+-   Helmet security headers
+
+------------------------------------------------------------------------
+
+14. Performance Requirements
+
+-   Fast page loading
+-   API response under 300ms
+-   Image optimization
+-   Lazy loading
+
+------------------------------------------------------------------------
+
+15. Additional UX Improvements
+
+To make the platform exceptional:
+
+-   Skeleton loading UI
+-   Smooth cart animations
+-   Recommended foods
+-   Smart search
+-   Recently viewed items
+-   Push notifications
+
+------------------------------------------------------------------------
+
+16. Deployment
+
+Recommended deployment setup:
+
+Frontend - Vercel
+
+Backend - VPS server
+
+Database - MongoDB Atlas
+
+Telegram Bot - VPS
+
+------------------------------------------------------------------------
+
+17. Future Improvements
+
+-   Mobile application
+-   AI food recommendations
+-   Delivery driver system
+-   Real-time order tracking
+-   Loyalty points system
