@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ordersAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Modal from '@/components/Modal';
@@ -36,37 +36,58 @@ export default function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const knownOrderIdsRef = useRef<Set<string>>(new Set());
+  const hasLoadedOnceRef = useRef(false);
 
-  const fetchOrders = useCallback(async () => {
+  const fetchOrders = useCallback(async (options?: { silent?: boolean; notifyOnNew?: boolean }) => {
+    const { silent = false, notifyOnNew = false } = options || {};
+    if (!silent) setLoading(true);
     const params: Record<string, string> = { limit: '50', page: String(page) };
     if (filter) params.status = filter;
     if (search.trim()) params.search = search.trim();
     try {
       const res = await ordersAPI.getAll(params);
-      setOrders(res.data.orders);
+      const nextOrders: Order[] = res.data.orders || [];
+      setOrders(nextOrders);
       setPages(res.data.pages || 1);
       setTotal(res.data.total || 0);
-      setLoading(false);
+      const nextIds = new Set(nextOrders.map((order) => order._id));
+      if (notifyOnNew && hasLoadedOnceRef.current) {
+        const newOrdersCount = nextOrders.filter((order) => !knownOrderIdsRef.current.has(order._id)).length;
+        if (newOrdersCount > 0) {
+          toast.success(
+            newOrdersCount === 1
+              ? t('new_order_notification_single')
+              : t('new_order_notification_many', { count: newOrdersCount })
+          );
+        }
+      }
+      knownOrderIdsRef.current = nextIds;
+      hasLoadedOnceRef.current = true;
     } catch {
       toast.error(tCommon('error'));
-      setLoading(false);
+    } finally {
+      if (!silent) setLoading(false);
     }
-  }, [filter, page, search, tCommon]);
+  }, [filter, page, search, t, tCommon]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchOrders();
-    }, 0);
+    const intervalId = window.setInterval(() => {
+      void fetchOrders({ silent: true, notifyOnNew: true });
+    }, 10000);
 
-    return () => clearTimeout(timer);
+    return () => window.clearInterval(intervalId);
+  }, [fetchOrders]);
+
+  useEffect(() => {
+    void fetchOrders({ notifyOnNew: false });
   }, [fetchOrders]);
 
   const updateStatus = async (id: string, status: string) => {
     try {
       await ordersAPI.updateStatus(id, status);
       toast.success('Status updated');
-      setLoading(true);
-      await fetchOrders();
+      await fetchOrders({ notifyOnNew: false });
     } catch {
       toast.error(tCommon('error'));
     }

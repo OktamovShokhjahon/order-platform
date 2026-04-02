@@ -1,10 +1,10 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { addToCart } from '@/store/slices/cartSlice';
+import { addToCart, clearCart } from '@/store/slices/cartSlice';
 import { foodsAPI } from '@/lib/api';
 import { FoodDetailSkeleton } from '@/components/Skeleton';
 import FoodCard from '@/components/FoodCard';
@@ -33,12 +33,14 @@ export default function FoodDetailPage() {
   const locale = (params?.locale as string) || 'en';
   const id = params?.id as string;
   const dispatch = useDispatch();
+  const router = useRouter();
 
   const [food, setFood] = useState<Food | null>(null);
   const [related, setRelated] = useState<Food[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [currentImage, setCurrentImage] = useState(0);
+  const [orderingNow, setOrderingNow] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -71,6 +73,13 @@ export default function FoodDetailPage() {
   const handleAddToCart = () => {
     dispatch(addToCart({ _id: food._id, name: food.name, price: food.price, image: foodImages[0] || food.image || DEFAULT_FOOD_IMAGE, quantity }));
     toast.success(t('added'));
+  };
+
+  const handleOrderNow = () => {
+    setOrderingNow(true);
+    dispatch(clearCart());
+    dispatch(addToCart({ _id: food._id, name: food.name, price: food.price, image: foodImages[0] || food.image || DEFAULT_FOOD_IMAGE, quantity }));
+    router.push(`/${locale}/checkout`);
   };
 
   const showPreviousImage = () => {
@@ -193,14 +202,24 @@ export default function FoodDetailPage() {
                 <FiPlus size={18} />
               </button>
             </div>
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={handleAddToCart}
-              className="flex-1 flex items-center justify-center gap-2 bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary-dark transition-colors"
-            >
-              <FiShoppingCart size={18} />
-              {t('add_to_cart')}
-            </motion.button>
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleAddToCart}
+                className="flex items-center justify-center gap-2 bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary-dark transition-colors"
+              >
+                <FiShoppingCart size={18} />
+                {t('add_to_cart')}
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleOrderNow}
+                disabled={orderingNow}
+                className="flex items-center justify-center bg-foreground text-background py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-70"
+              >
+                {orderingNow ? tCommon('loading') : t('order_now')}
+              </motion.button>
+            </div>
           </div>
         </motion.div>
       </div>

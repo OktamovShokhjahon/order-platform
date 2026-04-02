@@ -29,6 +29,7 @@
   "food": {
     "ingredients": "Tarkibiy qismlar",
     "add_to_cart": "Savatga qo'shish",
+    "order_now": "Hozir buyurtma berish",
     "added": "Qo'shildi!",
     "related": "Sizga yoqishi mumkin",
     "price": "Narx"
@@ -73,6 +74,13 @@
     "expiry_invalid": "Amal qilish muddati MM/YY formatida bo'lishi kerak",
     "cvc_required": "CVC ni kiriting",
     "cvc_invalid": "CVC 3 yoki 4 ta raqamdan iborat bo'lishi kerak",
+    "payment_method": "To'lov usuli",
+    "pay_with_card": "Karta orqali to'lash",
+    "pay_on_delivery": "Yetkazilganda to'lash",
+    "pay_on_delivery_hint": "Buyurtma kelganda kuryerga to'lov qiling.",
+    "locked": "Qulflangan",
+    "card_payment_locked": "Karta orqali to'lov vaqtincha mavjud emas.",
+    "card_locked_hint": "Karta maydonlari qulflangan. Yetkazilganda to'lash usulidan foydalaning.",
     "account_prompt_title": "Hisob yaratilsinmi?",
     "account_prompt_description": "Buyurtmangiz qabul qilindi. Yaxshiroq tajriba uchun hisob yarating va keyingi safar buyurtmalarni kuzatish hamda ma'lumotlaringizni saqlab qoling.",
     "account_prompt_create": "Hisob yaratish",
@@ -118,7 +126,9 @@
     "cancel": "Bekor qilish",
     "delivered": "Yetkazildi",
     "status_updated": "Buyurtma holati yangilandi",
-    "login_required": "Kuryer sifatida tizimga kiring"
+    "login_required": "Kuryer sifatida tizimga kiring",
+    "new_order_notification_single": "Yetkazib berish uchun yangi buyurtma keldi",
+    "new_order_notification_many": "Yetkazib berish uchun {count} ta yangi buyurtma keldi"
   },
   "auth": {
     "login_title": "Xush kelibsiz",
@@ -192,7 +202,9 @@
     "showing_orders": "{total} ta buyurtmadan {count} tasi ko'rsatilmoqda",
     "page_label": "{pages} sahifadan {page}-sahifa",
     "previous": "Oldingi",
-    "next": "Keyingi"
+    "next": "Keyingi",
+    "new_order_notification_single": "Yangi buyurtma qabul qilindi",
+    "new_order_notification_many": "{count} ta yangi buyurtma qabul qilindi"
   },
   "common": {
     "loading": "Yuklanmoqda...",

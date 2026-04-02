@@ -9,13 +9,10 @@ import { ordersAPI, paymentsAPI } from '@/lib/api';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import Modal from '@/components/Modal';
 import { saveGuestOrder } from '@/lib/guestOrders';
 
 const PHONE_REGEX = /^998 \(\d{2}\) \d{3}-\d{2}-\d{2}$/;
-const CARD_NUMBER_REGEX = /^\d{4} \d{4} \d{4} \d{4}$/;
-const EXPIRY_DATE_REGEX = /^(0[1-9]|1[0-2])\/\d{2}$/;
-const CVC_REGEX = /^\d{3,4}$/;
+const LOCKED_PAYMENT_METHOD = 'card';
 
 const digitsOnly = (value: string) => value.replace(/\D/g, '');
 
@@ -40,19 +37,6 @@ const formatPhoneNumber = (value: string) => {
   return formatted;
 };
 
-const formatCardNumber = (value: string) =>
-  digitsOnly(value)
-    .slice(0, 16)
-    .replace(/(\d{4})(?=\d)/g, '$1 ');
-
-const formatExpiryDate = (value: string) => {
-  const digits = digitsOnly(value).slice(0, 4);
-  if (digits.length < 3) return digits;
-  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-};
-
-const formatCvc = (value: string) => digitsOnly(value).slice(0, 4);
-
 export default function CheckoutPage() {
   const t = useTranslations('checkout');
   const tCommon = useTranslations('common');
@@ -69,14 +53,11 @@ export default function CheckoutPage() {
     customerName: user?.name || '',
     customerPhone: '',
     deliveryAddress: '',
-    cardNumber: '',
-    expiryDate: '',
-    cvc: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [guestSuccessPath, setGuestSuccessPath] = useState('');
-  const [showGuestPrompt, setShowGuestPrompt] = useState(false);
+  const [isRedirectingToSuccess, setIsRedirectingToSuccess] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash_on_delivery'>('cash_on_delivery');
 
   const updateForm = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -94,21 +75,15 @@ export default function CheckoutPage() {
     if (!form.customerPhone.trim()) errs.customerPhone = t('phone_required');
     else if (!PHONE_REGEX.test(form.customerPhone)) errs.customerPhone = t('phone_invalid');
     if (!form.deliveryAddress.trim()) errs.deliveryAddress = t('address_required');
-    if (!form.cardNumber.trim()) errs.cardNumber = t('card_number_required');
-    else if (!CARD_NUMBER_REGEX.test(form.cardNumber)) errs.cardNumber = t('card_number_invalid');
-    if (!form.expiryDate.trim()) errs.expiryDate = t('expiry_required');
-    else if (!EXPIRY_DATE_REGEX.test(form.expiryDate)) errs.expiryDate = t('expiry_invalid');
-    if (!form.cvc.trim()) errs.cvc = t('cvc_required');
-    else if (!CVC_REGEX.test(form.cvc)) errs.cvc = t('cvc_invalid');
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   useEffect(() => {
-    if (items.length === 0 && !guestSuccessPath) {
+    if (items.length === 0 && !isRedirectingToSuccess) {
       router.push(`/${locale}/cart`);
     }
-  }, [items.length, guestSuccessPath, locale, router]);
+  }, [items.length, isRedirectingToSuccess, locale, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +102,9 @@ export default function CheckoutPage() {
       };
 
       const orderRes = await ordersAPI.create(orderData);
-      await paymentsAPI.process({ orderId: orderRes.data._id, method: 'card' });
+      if (paymentMethod === 'card') {
+        await paymentsAPI.process({ orderId: orderRes.data._id, method: 'card' });
+      }
 
       const successPath = `/${locale}/order-success?id=${orderRes.data._id}`;
 
@@ -139,7 +116,7 @@ export default function CheckoutPage() {
           deliveryAddress: form.deliveryAddress,
           totalPrice: total,
           status: orderRes.data.status || 'pending',
-          paymentStatus: 'paid',
+          paymentStatus: paymentMethod === 'card' ? 'paid' : orderRes.data.paymentStatus || 'pending',
           createdAt: orderRes.data.createdAt || new Date().toISOString(),
           items: items.map((item) => ({
             foodId: item._id,
@@ -151,14 +128,8 @@ export default function CheckoutPage() {
         });
       }
 
+      setIsRedirectingToSuccess(true);
       dispatch(clearCart());
-
-      if (!user) {
-        setGuestSuccessPath(successPath);
-        setShowGuestPrompt(true);
-        return;
-      }
-
       router.push(successPath);
     } catch (error) {
       console.error('Order failed:', error);
@@ -168,25 +139,14 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleGuestLater = () => {
-    if (guestSuccessPath) {
-      router.push(guestSuccessPath);
-    }
-  };
-
-  const handleCreateAccount = () => {
-    if (!guestSuccessPath) return;
-    router.push(`/${locale}/auth?mode=register&next=${encodeURIComponent(guestSuccessPath)}`);
-  };
-
-  if (items.length === 0 && !guestSuccessPath) {
+  if (items.length === 0) {
     return null;
   }
 
   return (
     <>
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <motion.h1
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <motion.h1
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-3xl font-bold text-foreground mb-8"
@@ -243,56 +203,37 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            <div className="bg-card border border-border rounded-2xl p-5 space-y-5">
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">{t('card_details')}</h2>
-                <p className="text-sm text-muted mt-1">{t('card_hint')}</p>
-              </div>
+            <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+              <h2 className="text-lg font-semibold text-foreground">{t('payment_method')}</h2>
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  disabled
+                  className="w-full text-left border border-border rounded-xl p-4 opacity-60 cursor-not-allowed bg-input"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-medium text-foreground">{t('pay_with_card')}</span>
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-border text-muted">
+                      {t('locked')}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted mt-1">{t('card_payment_locked')}</p>
+                </button>
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">{t('card_number')}</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="cc-number"
-                  value={form.cardNumber}
-                  onChange={(e) => updateForm('cardNumber', formatCardNumber(e.target.value))}
-                  placeholder={t('card_number_placeholder')}
-                  className="w-full px-4 py-3 bg-input border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-                {errors.cardNumber && <p className="text-red-500 text-sm mt-1">{errors.cardNumber}</p>}
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('cash_on_delivery')}
+                  className={`w-full text-left border rounded-xl p-4 transition-colors ${
+                    paymentMethod === 'cash_on_delivery'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/40'
+                  }`}
+                >
+                  <span className="font-medium text-foreground">{t('pay_on_delivery')}</span>
+                  <p className="text-xs text-muted mt-1">{t('pay_on_delivery_hint')}</p>
+                </button>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">{t('expiry_date')}</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="cc-exp"
-                    value={form.expiryDate}
-                    onChange={(e) => updateForm('expiryDate', formatExpiryDate(e.target.value))}
-                    placeholder={t('expiry_date_placeholder')}
-                    className="w-full px-4 py-3 bg-input border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
-                  {errors.expiryDate && <p className="text-red-500 text-sm mt-1">{errors.expiryDate}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">{t('cvc')}</label>
-                  <input
-                    type="password"
-                    inputMode="numeric"
-                    autoComplete="cc-csc"
-                    value={form.cvc}
-                    onChange={(e) => updateForm('cvc', formatCvc(e.target.value))}
-                    placeholder="123"
-                    className="w-full px-4 py-3 bg-input border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
-                  {errors.cvc && <p className="text-red-500 text-sm mt-1">{errors.cvc}</p>}
-                </div>
-              </div>
-          </div>
+            </div>
 
           <motion.button
             whileTap={{ scale: 0.98 }}
@@ -335,30 +276,15 @@ export default function CheckoutPage() {
           </div>
         </motion.div>
       </div>
-    </div>
-      <Modal
-        isOpen={showGuestPrompt}
-        onClose={handleGuestLater}
-        title={t('account_prompt_title')}
-      >
-        <p className="text-sm text-muted mb-5">{t('account_prompt_description')}</p>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            type="button"
-            onClick={handleCreateAccount}
-            className="flex-1 bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary-dark transition-colors"
-          >
-            {t('account_prompt_create')}
-          </button>
-          <button
-            type="button"
-            onClick={handleGuestLater}
-            className="flex-1 border border-border py-3 rounded-xl font-semibold hover:bg-input transition-colors"
-          >
-            {t('account_prompt_later')}
-          </button>
+      </div>
+      {submitting && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4">
+          <div className="bg-card border border-border rounded-2xl px-6 py-5 w-full max-w-sm text-center">
+            <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-sm text-foreground font-medium">{t('processing')}</p>
+          </div>
         </div>
-      </Modal>
+      )}
     </>
   );
 }

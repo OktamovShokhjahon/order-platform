@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { driverAPI } from '@/lib/api';
@@ -29,6 +29,8 @@ export default function DriverPage() {
   const [orders, setOrders] = useState<DriverOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState('');
+  const knownOrderIdsRef = useRef<Set<string>>(new Set());
+  const hasLoadedOnceRef = useRef(false);
 
   useEffect(() => {
     if (user && user.role !== 'driver' && user.role !== 'admin') {
@@ -36,21 +38,45 @@ export default function DriverPage() {
     }
   }, [locale, router, user]);
 
-  const fetchOrders = useCallback(async () => {
-    setLoading(true);
+  const fetchOrders = useCallback(async (options?: { silent?: boolean; notifyOnNew?: boolean }) => {
+    const { silent = false, notifyOnNew = false } = options || {};
+    if (!silent) setLoading(true);
     try {
       const res = await driverAPI.getDeliveringOrders({ limit: '50' });
-      setOrders(res.data.orders || []);
+      const nextOrders: DriverOrder[] = res.data.orders || [];
+      setOrders(nextOrders);
+      const nextIds = new Set(nextOrders.map((order) => order._id));
+      if (notifyOnNew && hasLoadedOnceRef.current) {
+        const newOrdersCount = nextOrders.filter((order) => !knownOrderIdsRef.current.has(order._id)).length;
+        if (newOrdersCount > 0) {
+          toast.success(
+            newOrdersCount === 1
+              ? t('new_order_notification_single')
+              : t('new_order_notification_many', { count: newOrdersCount })
+          );
+        }
+      }
+      knownOrderIdsRef.current = nextIds;
+      hasLoadedOnceRef.current = true;
     } catch {
       toast.error(tCommon('error'));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  }, [tCommon]);
+  }, [t, tCommon]);
 
   useEffect(() => {
     if (!user) return;
-    void fetchOrders();
+    void fetchOrders({ notifyOnNew: false });
+  }, [fetchOrders, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const intervalId = window.setInterval(() => {
+      void fetchOrders({ silent: true, notifyOnNew: true });
+    }, 10000);
+
+    return () => window.clearInterval(intervalId);
   }, [fetchOrders, user]);
 
   const updateStatus = async (id: string, status: 'delivered' | 'cancelled') => {
@@ -58,7 +84,7 @@ export default function DriverPage() {
     try {
       await driverAPI.updateOrderStatus(id, status);
       toast.success(t('status_updated'));
-      await fetchOrders();
+      await fetchOrders({ notifyOnNew: false });
     } catch {
       toast.error(tCommon('error'));
     } finally {

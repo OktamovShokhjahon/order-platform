@@ -29,6 +29,7 @@
   "food": {
     "ingredients": "Ingredients",
     "add_to_cart": "Add to Cart",
+    "order_now": "Order now",
     "added": "Added!",
     "related": "You may also like",
     "price": "Price"
@@ -73,6 +74,13 @@
     "expiry_invalid": "Expiry date must be in MM/YY format",
     "cvc_required": "CVC is required",
     "cvc_invalid": "CVC must be 3 or 4 digits",
+    "payment_method": "Payment Method",
+    "pay_with_card": "Pay with card",
+    "pay_on_delivery": "Pay on delivery",
+    "pay_on_delivery_hint": "Pay the courier when your order arrives.",
+    "locked": "Locked",
+    "card_payment_locked": "Card payment is temporarily unavailable.",
+    "card_locked_hint": "Card fields are locked. Please use pay on delivery.",
     "account_prompt_title": "Create an account?",
     "account_prompt_description": "Your order has been placed. For a better experience, create an account to track orders and save your details for next time.",
     "account_prompt_create": "Create account",
@@ -118,7 +126,9 @@
     "cancel": "Cancel",
     "delivered": "Delivered",
     "status_updated": "Order status updated",
-    "login_required": "Please login as driver"
+    "login_required": "Please login as driver",
+    "new_order_notification_single": "New order assigned to delivery",
+    "new_order_notification_many": "{count} new orders assigned to delivery"
   },
   "auth": {
     "login_title": "Welcome Back",
@@ -192,7 +202,9 @@
     "showing_orders": "Showing {count} of {total} orders",
     "page_label": "Page {page} of {pages}",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "new_order_notification_single": "New order received",
+    "new_order_notification_many": "{count} new orders received"
   },
   "common": {
     "loading": "Loading...",

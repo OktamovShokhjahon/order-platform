@@ -29,6 +29,7 @@
   "food": {
     "ingredients": "Ингредиенты",
     "add_to_cart": "В корзину",
+    "order_now": "Заказать сейчас",
     "added": "Добавлено!",
     "related": "Вам также может понравиться",
     "price": "Цена"
@@ -73,6 +74,13 @@
     "expiry_invalid": "Срок действия должен быть в формате MM/YY",
     "cvc_required": "Введите CVC",
     "cvc_invalid": "CVC должен содержать 3 или 4 цифры",
+    "payment_method": "Способ оплаты",
+    "pay_with_card": "Оплатить картой",
+    "pay_on_delivery": "Оплатить при получении",
+    "pay_on_delivery_hint": "Оплатите курьеру, когда заказ будет доставлен.",
+    "locked": "Заблокировано",
+    "card_payment_locked": "Оплата картой временно недоступна.",
+    "card_locked_hint": "Поля карты заблокированы. Используйте оплату при получении.",
     "account_prompt_title": "Создать аккаунт?",
     "account_prompt_description": "Ваш заказ оформлен. Для более удобного использования создайте аккаунт, чтобы отслеживать заказы и сохранить свои данные на будущее.",
     "account_prompt_create": "Создать аккаунт",
@@ -118,7 +126,9 @@
     "cancel": "Отменить",
     "delivered": "Доставлено",
     "status_updated": "Статус заказа обновлен",
-    "login_required": "Пожалуйста, войдите как курьер"
+    "login_required": "Пожалуйста, войдите как курьер",
+    "new_order_notification_single": "Новый заказ назначен на доставку",
+    "new_order_notification_many": "Назначено новых заказов: {count}"
   },
   "auth": {
     "login_title": "Добро пожаловать",
@@ -192,7 +202,9 @@
     "showing_orders": "Показано {count} из {total} заказов",
     "page_label": "Страница {page} из {pages}",
     "previous": "Назад",
-    "next": "Вперед"
+    "next": "Вперед",
+    "new_order_notification_single": "Поступил новый заказ",
+    "new_order_notification_many": "Поступило новых заказов: {count}"
   },
   "common": {
     "loading": "Загрузка...",
