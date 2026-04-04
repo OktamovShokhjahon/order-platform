@@ -1,0 +1,210 @@
+================================================================================
+TECHNICAL MISSION — MOBILE APPLICATION (ORDER PLATFORM)
+================================================================================
+Document purpose
+  Define scope, constraints, architecture, and delivery criteria for a native
+  mobile client that consumes the existing order-platform backend (Express +
+  MongoDB) alongside the current Next.js web app and optional Telegram bot.
+
+  This file is the single reference for engineering, AI-assisted implementation,
+  and QA alignment.
+
+--------------------------------------------------------------------------------
+1. CONTEXT AND GOALS
+--------------------------------------------------------------------------------
+1.1 Product context
+  - Existing system: REST API (Node/Express), JWT auth, Swagger at /api-docs,
+    static uploads under /uploads.
+  - Web app: Next.js 16, Redux, next-intl (en, ru, uz).
+  - Mobile app goal: provide first-class ordering for customers; optional
+    dedicated experiences for admin and driver roles where business requires.
+
+1.2 Primary objectives
+  - Parity with core customer flows: browse catalog, product detail, cart,
+    checkout (pay on delivery as per current web rules), order success,
+    optional guest ordering without forced registration.
+  - Secure authentication for logged-in users (same JWT contract as web).
+  - Responsive, accessible UI; support system dark/light if feasible.
+  - Production-ready build pipeline (iOS + Android).
+
+1.3 Non-goals (initial release unless explicitly added)
+  - Replacing the web admin panel (mobile may be read-only or limited admin).
+  - Real card acquiring / PCI-compliant in-app card UI (web currently uses
+    pay-on-delivery; align with product owner before adding real payments).
+  - Full offline catalog without network (optional future enhancement).
+
+--------------------------------------------------------------------------------
+2. RECOMMENDED TECH STACK (DECISION RECORD)
+--------------------------------------------------------------------------------
+2.1 Preferred path (alignment with current frontend)
+  - Framework: React Native with Expo (managed workflow) + TypeScript.
+  - Rationale: shared mental model with React/Next, TypeScript across repos,
+    large ecosystem, OTA updates via Expo, straightforward CI for store builds.
+
+2.2 Alternative
+  - Flutter (Dart): valid if team prefers single UI toolkit and stricter UI
+    consistency; requires separate API client and no code reuse from Next.
+
+2.3 State and data
+  - Client state: Redux Toolkit or Zustand + React Query (TanStack Query) for
+    server cache, retries, and background refetch (poll lists where web polls).
+  - HTTP: axios or fetch wrapper mirroring web headers (Authorization: Bearer).
+
+2.4 Internationalization
+  - Must support same locales as web: en, ru, uz.
+  - Use i18next + react-i18next or expo-localization + JSON message files
+    structured like frontend/messages/*.json keys where possible.
+
+--------------------------------------------------------------------------------
+3. BACKEND CONTRACT (SOURCE OF TRUTH)
+--------------------------------------------------------------------------------
+3.1 Base URL
+  - Configurable per environment: e.g. https://api.example.com/api
+  - Development: http://<host>:5000/api (or device-accessible LAN IP).
+  - All requests JSON unless multipart (admin category/food/news uploads).
+
+3.2 Authentication
+  - Login/register endpoints under /api/auth (see Swagger).
+  - Store JWT securely: Expo SecureStore (or Keychain/Keystore via library).
+  - Attach header: Authorization: Bearer <token> for protected routes.
+  - 401 handling: clear token and route to login (match web interceptor behavior).
+
+3.3 Core endpoints to implement against (minimum customer app)
+  - GET  /categories, GET /categories/:id
+  - GET  /foods (query: category, limit, etc.), GET /foods/:id
+  - POST /orders (optionalAuth — guest orders allowed where API permits)
+  - POST /payments — only if product re-enables card flow; else omit.
+  - GET  /news (if in scope for mobile home/marketing)
+
+3.4 Media
+  - Image URLs may be relative (/uploads/...); resolve with API origin:
+    `${API_ORIGIN}${path}`.
+  - Use responsive image strategy (cached lists, placeholders).
+
+3.5 Real-time updates
+  - Current web uses polling for admin/driver lists. Mobile should:
+    - Either reuse polling with sane intervals and battery awareness, or
+    - Add WebSocket/SSE in a future backend iteration (out of scope unless
+      specified).
+  - Push notifications (see section 6) require backend additions.
+
+--------------------------------------------------------------------------------
+4. FUNCTIONAL REQUIREMENTS BY ROLE
+--------------------------------------------------------------------------------
+4.1 Customer (MVP — required)
+  - Home: categories, popular items, search (if API supports).
+  - Category listing and food detail with images, price (UZS), ingredients.
+  - Cart: add/update quantity, persist locally (AsyncStorage) with optional
+    sync when user logs in (define conflict policy: server cart vs local).
+  - Checkout: contact fields, pay-on-delivery selection, loading state,
+    navigation to order success with order id.
+  - Auth: login/register optional; guest checkout must remain possible if web
+    does.
+  - Profile / orders history for authenticated users (GET /orders).
+
+4.2 Admin (phase 2 — optional)
+  - View orders list with filters; update status (PUT /orders/:id/status).
+  - Dashboard metrics if exposed under /api/admin/dashboard.
+  - Restrict UI to role === admin; hide from customers.
+
+4.3 Driver (phase 2 — optional)
+  - List orders in delivering (GET /api/driver/orders).
+  - Actions: delivered / cancelled per API rules; after delivered, backend
+    sets paymentStatus paid (current server behavior).
+  - Auth: driver or admin role only.
+
+--------------------------------------------------------------------------------
+5. NON-FUNCTIONAL REQUIREMENTS
+--------------------------------------------------------------------------------
+5.1 Performance
+  - List screens should render under ~1s on mid-range devices on Wi-Fi (cached).
+  - Image caching; pagination if API returns paginated lists.
+
+5.2 Security
+  - No secrets in repo; use .env / EAS secrets for API URL and public keys.
+  - Certificate pinning: consider for production (optional hardening).
+  - Validate all user input client-side; trust server validation.
+
+5.3 Observability
+  - Crash reporting (Sentry or Expo).
+  - Basic analytics events (screen views, order completed) — privacy-compliant.
+
+5.4 Accessibility
+  - Minimum: dynamic font scaling, screen reader labels on primary actions.
+
+--------------------------------------------------------------------------------
+6. PUSH NOTIFICATIONS AND “LIVE” ORDERS (EXTENSION)
+--------------------------------------------------------------------------------
+  Current REST API does not expose push by default. For parity with “notify
+  admin/driver on new order”, choose one:
+
+  A) Short term: in-app polling while app is foreground/background (limited),
+     plus optional local notifications scheduled client-side (weak).
+
+  B) Production: Firebase Cloud Messaging (FCM) + device token registration
+     endpoint on backend, topics or per-user tokens for admin/driver.
+
+  Deliverable: document chosen approach in README and implement B if push is
+  mandatory for launch.
+
+--------------------------------------------------------------------------------
+7. UX AND DESIGN SYSTEM
+--------------------------------------------------------------------------------
+  - Reuse brand colors and typography from web (extract from Tailwind theme or
+    design tokens).
+  - Navigation: tab bar for main sections (Home, Categories, Cart, Account).
+  - Empty states, error states, and retry for network failures.
+  - Haptic feedback optional on primary actions (iOS/Android).
+
+--------------------------------------------------------------------------------
+8. BUILD, RELEASE, AND ENVIRONMENTS
+--------------------------------------------------------------------------------
+  - Environments: development, staging, production (API base URL per env).
+  - iOS: Apple Developer account, certificates, App Store Connect metadata.
+  - Android: Play Console, signing keys, internal testing track first.
+  - CI: lint, typecheck, unit tests on PR; EAS Build for store binaries.
+
+--------------------------------------------------------------------------------
+9. TESTING STRATEGY
+--------------------------------------------------------------------------------
+  - Unit: reducers, API mappers, i18n helpers.
+  - Integration: auth flow, cart persistence, checkout happy path against mock
+    server or staging.
+  - E2E: Detox or Maestro for critical paths (optional phase 2).
+
+--------------------------------------------------------------------------------
+10. DELIVERABLES (MILESTONES)
+--------------------------------------------------------------------------------
+  M1 — Foundation
+    - Expo app shell, env config, API client, auth storage, i18n skeleton.
+
+  M2 — Customer MVP
+    - Catalog, food detail, cart, checkout, order success, guest + user flows.
+
+  M3 — Hardening
+    - Error handling, loading states, image caching, store build profiles.
+
+  M4 — Optional roles
+    - Admin and/or driver screens wired to existing endpoints.
+
+  M5 — Store submission
+    - Icons, splash, privacy policy URL, versioning, release notes.
+
+--------------------------------------------------------------------------------
+11. OPEN QUESTIONS FOR PRODUCT OWNER
+--------------------------------------------------------------------------------
+  - Single app with role-based UI vs three separate store apps?
+  - Mandatory push notifications at v1?
+  - Cart merge policy when user logs in mid-session.
+  - Deep linking (order success URL, marketing campaigns).
+
+--------------------------------------------------------------------------------
+12. REFERENCE REPOSITORIES IN THIS MONOREPO
+--------------------------------------------------------------------------------
+  - backend/     — API implementation and Swagger.
+  - frontend/    — Feature parity reference and copy for i18n keys.
+  - telegram-bot/— Optional; not required for mobile MVP unless integrated.
+
+================================================================================
+END OF DOCUMENT
+================================================================================

@@ -70,6 +70,7 @@ export const paymentsAPI = {
 
 export const adminAPI = {
   getDashboard: () => api.get('/admin/dashboard'),
+  getStatistics: (params?: Record<string, string>) => api.get('/admin/statistics', { params }),
   getUsers: () => api.get('/admin/users'),
   getUserDetails: (id: string) => api.get(`/admin/users/${id}`),
   updateUserRole: (id: string, role: string) => api.put(`/admin/users/${id}/role`, { role }),

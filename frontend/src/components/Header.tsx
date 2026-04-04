@@ -1,14 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams, usePathname, useRouter } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useTheme } from 'next-themes';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectCartCount } from '@/store/slices/cartSlice';
 import { logout } from '@/store/slices/authSlice';
 import { RootState, AppDispatch } from '@/store';
-import { FiShoppingCart, FiSun, FiMoon, FiMenu, FiX, FiUser, FiLogOut } from 'react-icons/fi';
+import LocaleThemeControls from '@/components/LocaleThemeControls';
+import { FiShoppingCart, FiMenu, FiX, FiUser, FiLogOut } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 
@@ -16,26 +16,13 @@ export default function Header() {
   const t = useTranslations('nav');
   const params = useParams();
   const pathname = usePathname();
-  const router = useRouter();
   const locale = (params?.locale as string) || 'en';
-  const { theme, setTheme } = useTheme();
   const cartCount = useSelector(selectCartCount);
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch<AppDispatch>();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isAdmin = pathname?.includes('/admin');
-
-  const switchLocale = (newLocale: string) => {
-    const path = pathname?.replace(`/${locale}`, `/${newLocale}`) || `/${newLocale}`;
-    router.push(path);
-  };
-
-  const locales = [
-    { code: 'en', label: 'EN' },
-    { code: 'ru', label: 'RU' },
-    { code: 'uz', label: 'UZ' },
-  ];
 
   if (isAdmin) return null;
 
@@ -74,29 +61,9 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-1 bg-input rounded-lg p-1">
-              {locales.map((l) => (
-                <button
-                  key={l.code}
-                  onClick={() => switchLocale(l.code)}
-                  className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-                    locale === l.code
-                      ? 'bg-primary text-white'
-                      : 'hover:bg-card-hover text-muted'
-                  }`}
-                >
-                  {l.label}
-                </button>
-              ))}
+            <div className="hidden sm:block">
+              <LocaleThemeControls />
             </div>
-
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2 rounded-lg hover:bg-input transition-colors"
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <FiSun size={18} /> : <FiMoon size={18} />}
-            </button>
 
             <Link href={`/${locale}/cart`} className="relative p-2 rounded-lg hover:bg-input transition-colors">
               <FiShoppingCart size={20} />
@@ -184,18 +151,8 @@ export default function Header() {
                   {t('admin')}
                 </Link>
               )}
-              <div className="flex items-center gap-2 pt-2">
-                {locales.map((l) => (
-                  <button
-                    key={l.code}
-                    onClick={() => { switchLocale(l.code); setMobileOpen(false); }}
-                    className={`px-3 py-1 text-xs rounded-md ${
-                      locale === l.code ? 'bg-primary text-white' : 'bg-input text-muted'
-                    }`}
-                  >
-                    {l.label}
-                  </button>
-                ))}
+              <div className="pt-2">
+                <LocaleThemeControls onLocaleChange={() => setMobileOpen(false)} />
               </div>
               {user ? (
                 <button

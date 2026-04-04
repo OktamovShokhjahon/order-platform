@@ -5,11 +5,13 @@ import { useParams, usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
+import LocaleThemeControls from '@/components/LocaleThemeControls';
 import { FiGrid, FiShoppingBag, FiFolder, FiClipboard, FiUsers, FiArrowLeft, FiFileText } from 'react-icons/fi';
 import { useEffect } from 'react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const t = useTranslations('admin');
+  const tNav = useTranslations('nav');
   const params = useParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -24,10 +26,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 px-4">
+        <LocaleThemeControls />
         <div className="text-center">
-          <p className="text-muted mb-4">Please login as admin</p>
-          <Link href={`/${locale}/auth`} className="text-primary hover:underline">Login</Link>
+          <p className="text-muted mb-4">{t('login_as_admin_prompt')}</p>
+          <Link href={`/${locale}/auth`} className="text-primary hover:underline">
+            {tNav('login')}
+          </Link>
         </div>
       </div>
     );
@@ -43,22 +48,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)]">
-      <aside className="w-64 bg-card border-r border-border flex-shrink-0 hidden lg:block">
-        <div className="p-4">
+    <div className="flex min-h-screen flex-col lg:flex-row">
+      <div className="sticky top-0 z-40 flex items-center justify-end gap-2 border-b border-border bg-card px-3 py-2.5 lg:hidden">
+        <LocaleThemeControls compact />
+      </div>
+
+      <aside className="hidden w-64 shrink-0 border-r border-border bg-card lg:block">
+        <div className="flex min-h-screen flex-col p-4">
           <Link
             href={`/${locale}`}
-            className="flex items-center gap-2 text-sm text-muted hover:text-foreground mb-6"
+            className="mb-6 flex items-center gap-2 text-sm text-muted hover:text-foreground"
           >
             <FiArrowLeft size={16} />
-            Back to site
+            {t('back_to_site')}
           </Link>
           <div className="mb-6">
             <span className="text-2xl font-bold text-primary">Food</span>
             <span className="text-2xl font-bold text-foreground">Order</span>
-            <p className="text-xs text-muted mt-1">Admin Panel</p>
+            <p className="mt-1 text-xs text-muted">{t('panel_subtitle')}</p>
           </div>
-          <nav className="space-y-1">
+          <nav className="flex-1 space-y-1">
             {links.map((link) => {
               const isActive = pathname === link.href;
               return (
@@ -77,6 +86,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               );
             })}
           </nav>
+          <div className="mt-auto border-t border-border pt-4">
+            <LocaleThemeControls />
+          </div>
         </div>
       </aside>
 
@@ -101,7 +113,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </div>
 
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8 overflow-auto">
+      <main className="flex-1 overflow-auto p-4 pb-20 sm:p-6 sm:pb-20 lg:p-8 lg:pb-8">
         {children}
       </main>
     </div>

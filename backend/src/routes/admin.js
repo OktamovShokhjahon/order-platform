@@ -1,5 +1,11 @@
 const router = require('express').Router();
-const { getDashboard, getUsers, updateUserRole, getUserDetails } = require('../controllers/adminController');
+const {
+  getDashboard,
+  getStatistics,
+  getUsers,
+  updateUserRole,
+  getUserDetails,
+} = require('../controllers/adminController');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 /**
@@ -13,6 +19,31 @@ const { authMiddleware, adminMiddleware } = require('../middleware/auth');
  *       200: { description: Dashboard statistics }
  */
 router.get('/dashboard', authMiddleware, adminMiddleware, getDashboard);
+
+/**
+ * @swagger
+ * /api/admin/statistics:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Sales statistics (time range, food breakdown, chart series)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema: { type: string, enum: [daily, weekly, monthly, range] }
+ *       - in: query
+ *         name: from
+ *         schema: { type: string }
+ *       - in: query
+ *         name: to
+ *         schema: { type: string }
+ *       - in: query
+ *         name: locale
+ *         schema: { type: string, enum: [en, ru, uz] }
+ *     responses:
+ *       200: { description: Statistics payload }
+ */
+router.get('/statistics', authMiddleware, adminMiddleware, getStatistics);
 
 /**
  * @swagger
