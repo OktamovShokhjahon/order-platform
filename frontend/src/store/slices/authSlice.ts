@@ -13,13 +13,27 @@ interface AuthState {
   user: User | null;
   token: string | null;
   loading: boolean;
+  initialized: boolean;
   error: string | null;
 }
+
+const loadAuthFromStorage = (): Pick<AuthState, 'user' | 'token'> => {
+  if (typeof window === 'undefined') return { user: null, token: null };
+  try {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    return { user, token };
+  } catch {
+    return { user: null, token: null };
+  }
+};
 
 const initialState: AuthState = {
   user: null,
   token: null,
   loading: false,
+  initialized: false,
   error: null,
 };
 
@@ -54,15 +68,21 @@ export const register = createAsyncThunk(
 );
 
 export const loadUser = createAsyncThunk('auth/loadUser', async (_, { rejectWithValue }) => {
+  const token = localStorage.getItem('token');
+  if (!token) return rejectWithValue('No token');
+
   try {
-    const token = localStorage.getItem('token');
-    if (!token) return rejectWithValue('No token');
     const res = await authAPI.getMe();
+    localStorage.setItem('user', JSON.stringify(res.data.user));
     return { user: res.data.user, token };
-  } catch {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    return rejectWithValue('Session expired');
+  } catch (err: unknown) {
+    const error = err as { response?: { status?: number } };
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      return rejectWithValue('Session expired');
+    }
+    return rejectWithValue('Failed to verify session');
   }
 });
 
@@ -70,6 +90,11 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    initAuth(state) {
+      const stored = loadAuthFromStorage();
+      state.user = stored.user;
+      state.token = stored.token;
+    },
     logout(state) {
       state.user = null;
       state.token = null;
@@ -103,16 +128,25 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
+      .addCase(loadUser.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(loadUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.initialized = true;
         state.user = action.payload.user;
         state.token = action.payload.token;
       })
-      .addCase(loadUser.rejected, (state) => {
-        state.user = null;
-        state.token = null;
+      .addCase(loadUser.rejected, (state, action) => {
+        state.loading = false;
+        state.initialized = true;
+        if (action.payload === 'Session expired' || action.payload === 'No token') {
+          state.user = null;
+          state.token = null;
+        }
       });
   },
 });
 
-export const { logout, clearError } = authSlice.actions;
+export const { initAuth, logout, clearError } = authSlice.actions;
 export default authSlice.reducer;

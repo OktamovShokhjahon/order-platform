@@ -2,15 +2,27 @@
 
 import { Provider } from 'react-redux';
 import { store } from './index';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { initCart } from './slices/cartSlice';
-import { loadUser } from './slices/authSlice';
+import { initAuth, loadUser, logout } from './slices/authSlice';
+import { setOnUnauthorized } from '@/lib/api';
 
 function StoreInitializer({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
+  const didInit = useRef(false);
+
+  if (!didInit.current) {
+    didInit.current = true;
+    store.dispatch(initAuth());
     store.dispatch(initCart());
+  }
+
+  useEffect(() => {
+    setOnUnauthorized(() => {
+      store.dispatch(logout());
+    });
     store.dispatch(loadUser());
   }, []);
+
   return <>{children}</>;
 }
 
